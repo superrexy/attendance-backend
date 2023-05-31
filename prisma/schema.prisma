@@ -1,0 +1,103 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  admin
+  user
+}
+
+model User {
+  id             Int             @id @default(autoincrement())
+  name           String          @db.VarChar(255)
+  email          String          @unique @db.VarChar(255)
+  password       String          @db.VarChar(255)
+  avatar         String?         @db.VarChar(255)
+  role           UserRole        @default(user)
+  created_at     DateTime        @default(now())
+  updated_at     DateTime        @updatedAt
+  attendances    Attendance[]
+  token          RefreshToken[]
+  reset_password ResetPassword[]
+
+  @@map("users")
+}
+
+model ResetPassword {
+  id          Int      @id @default(autoincrement())
+  user_id     Int      @unique
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  token       String
+  is_verified Boolean  @default(false)
+  expires_at  DateTime
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@map("reset_passwords")
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LEAVE
+}
+
+model Attendance {
+  id                  Int              @id @default(autoincrement())
+  user_id             Int
+  user                User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  check_in            DateTime?
+  check_out           DateTime?
+  file                String?          @db.VarChar(255)
+  label               String?          @db.VarChar(255)
+  check_in_latitude   Float?
+  check_in_longitude  Float?
+  check_out_latitude  Float?
+  check_out_longitude Float?
+  status              AttendanceStatus @default(PRESENT)
+  created_at          DateTime         @default(now())
+  updated_at          DateTime         @updatedAt
+
+  @@map("attendances")
+}
+
+model AttendanceLocation {
+  id         Int      @id @default(autoincrement())
+  latitude   Float
+  longitude  Float
+  radius     Float
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("attendance_locations")
+}
+
+model AttendanceSchedule {
+  id         Int      @id @default(autoincrement())
+  start_time DateTime @db.Time()
+  end_time   DateTime @db.Time()
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("attendance_schedules")
+}
+
+model RefreshToken {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  token      String   @unique
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("refresh_tokens")
+}
